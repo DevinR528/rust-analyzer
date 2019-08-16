@@ -55,8 +55,6 @@ pub(crate) struct Block {
     element: SyntaxElement,
     text: SmolStr,
     parent: Box<Option<Block>>,
-    next_sib: Box<Option<Block>>,
-    first_child: Box<Option<Block>>,
     range: TextRange,
     prev_whitespace: Option<Whitespace>,
 }
@@ -245,27 +243,29 @@ impl<'b> Iterator for WalkBlocks<'b> {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct EditTree {
-    root: Block,
-}
+pub(crate) struct EditTree<'n>(&'n SyntaxNode);
 
-impl EditTree {
-    pub(crate) fn new(root: SyntaxNode) -> Self {
-        EditTree::build_tree(root)
+impl<'n> EditTree<'n> {
+    pub fn new(root: &'n SyntaxNode) -> Self {
+        EditTree(root)
     }
 
-    fn build_tree(root: SyntaxNode) -> EditTree {
-        println!("build_tree");
-        let ele = NodeOrToken::Node(root.clone());
-        let root = Block::build_block(ele);
-        println!("build_tree block built");
-        EditTree { root }
+    pub fn find_block(&self, element: SyntaxKind, token: SyntaxKind) -> Option<Block> {
+        if let Some(node) = walk_nodes(self.0).find(|ele| ele.kind() == element) {
+            if let Some(tkn) = walk_tokens(&node).find(|tkn| tkn.kind() == token) {
+                Some(Block::build_block(NodeOrToken::Token(tkn)))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     /// only for dev, we dont need to convert or diff in editTree
     pub(crate) fn to_string(&self) -> String {
         println!("to_string");
-        self.root.traverse().map(|blk| blk.to_string()).collect::<String>()
+        self.0.text().to_string()
         
     }
 }
