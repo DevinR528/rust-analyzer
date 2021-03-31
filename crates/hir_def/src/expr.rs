@@ -41,10 +41,11 @@ pub enum Literal {
     String(String),
     ByteString(Vec<u8>),
     Char(char),
+    Byte(u8),
     Bool(bool),
-    Int(u64, Option<BuiltinInt>),
-    Uint(u64, Option<BuiltinUint>),
-    Float(u64, Option<BuiltinFloat>), // FIXME: f64 is not Eq
+    Int(i128, Option<BuiltinInt>),
+    Uint(u128, Option<BuiltinUint>),
+    Float(String, Option<BuiltinFloat>), // FIXME: f64 is not Eq
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

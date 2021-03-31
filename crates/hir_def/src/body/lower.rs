@@ -508,7 +508,28 @@ impl ExprCollector<'_> {
                 }
             }
 
-            ast::Expr::Literal(e) => self.alloc_expr(Expr::Literal(e.kind().into()), syntax_ptr),
+            ast::Expr::Literal(e) => {
+                let mut kind = e.kind().into();
+                match &mut kind {
+                    Literal::Byte(b) => {
+                        *b = if let ast::LiteralKind::Byte = e.kind() {
+                            dbg!(e.to_string()).bytes().next().unwrap()
+                        } else {
+                            unreachable!()
+                        }
+                    }
+                    Literal::Char(c) => {
+                        *c = if let ast::LiteralKind::Char = e.kind() {
+                            dbg!(e.to_string()).chars().next().unwrap()
+                        } else {
+                            unreachable!()
+                        }
+                    }
+                    _ => {}
+                }
+
+                self.alloc_expr(Expr::Literal(kind), syntax_ptr)
+            }
             ast::Expr::IndexExpr(e) => {
                 let base = self.collect_expr_opt(e.base());
                 let index = self.collect_expr_opt(e.index());
@@ -939,23 +960,23 @@ impl From<ast::LiteralKind> for Literal {
         match ast_lit_kind {
             LiteralKind::IntNumber(lit) => {
                 if let builtin @ Some(_) = lit.suffix().and_then(BuiltinFloat::from_suffix) {
-                    return Literal::Float(Default::default(), builtin);
+                    return Literal::Float(lit.to_string(), builtin);
                 } else if let builtin @ Some(_) =
                     lit.suffix().and_then(|it| BuiltinInt::from_suffix(&it))
                 {
-                    Literal::Int(Default::default(), builtin)
+                    Literal::Int(lit.value().unwrap() as i128, builtin)
                 } else {
                     let builtin = lit.suffix().and_then(|it| BuiltinUint::from_suffix(&it));
-                    Literal::Uint(Default::default(), builtin)
+                    Literal::Uint(lit.value().unwrap(), builtin)
                 }
             }
             LiteralKind::FloatNumber(lit) => {
                 let ty = lit.suffix().and_then(|it| BuiltinFloat::from_suffix(&it));
-                Literal::Float(Default::default(), ty)
+                Literal::Float(lit.to_string(), ty)
             }
-            LiteralKind::ByteString(_) => Literal::ByteString(Default::default()),
-            LiteralKind::String(_) => Literal::String(Default::default()),
-            LiteralKind::Byte => Literal::Uint(Default::default(), Some(BuiltinUint::U8)),
+            LiteralKind::ByteString(s) => Literal::ByteString(s.to_string().into_bytes()),
+            LiteralKind::String(s) => Literal::String(s.value().unwrap().to_string()),
+            LiteralKind::Byte => Literal::Byte(Default::default()),
             LiteralKind::Bool(val) => Literal::Bool(val),
             LiteralKind::Char => Literal::Char(Default::default()),
         }

@@ -747,6 +747,7 @@ impl<'a> InferenceContext<'a> {
                     TyKind::Ref(Mutability::Not, array_type).intern(&Interner)
                 }
                 Literal::Char(..) => TyKind::Scalar(Scalar::Char).intern(&Interner),
+                Literal::Byte(_) => TyKind::Scalar(Scalar::Uint(UintTy::U8)).intern(&Interner),
                 Literal::Int(_v, ty) => match ty {
                     Some(int_ty) => {
                         TyKind::Scalar(Scalar::Int(primitive::int_ty_from_builtin(*int_ty)))
