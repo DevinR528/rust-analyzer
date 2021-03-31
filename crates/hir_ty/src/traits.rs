@@ -14,7 +14,7 @@ use crate::{
 
 use self::chalk::{from_chalk, Interner, ToChalk};
 
-pub(crate) mod chalk;
+pub mod chalk;
 
 /// This controls how much 'time' we give the Chalk solver before giving up.
 const CHALK_SOLVER_FUEL: i32 = 100;
@@ -26,10 +26,15 @@ struct ChalkContext<'a> {
 }
 
 fn create_chalk_solver() -> chalk_recursive::RecursiveSolver<Interner> {
-    let overflow_depth =
-        var("CHALK_OVERFLOW_DEPTH").ok().and_then(|s| s.parse().ok()).unwrap_or(100);
+    let overflow_depth = var("CHALK_OVERFLOW_DEPTH")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(100);
     let caching_enabled = true;
-    let max_size = var("CHALK_SOLVER_MAX_SIZE").ok().and_then(|s| s.parse().ok()).unwrap_or(30);
+    let max_size = var("CHALK_SOLVER_MAX_SIZE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(30);
     chalk_recursive::RecursiveSolver::new(overflow_depth, max_size, caching_enabled)
 }
 
@@ -51,13 +56,17 @@ impl TraitEnvironment {
         &'a self,
         ty: &'a Ty,
     ) -> impl Iterator<Item = TraitId> + 'a {
-        self.traits_from_clauses.iter().filter_map(move |(self_ty, trait_id)| {
-            if self_ty == ty {
-                Some(*trait_id)
-            } else {
-                None
-            }
-        })
+        self.traits_from_clauses
+            .iter()
+            .filter_map(
+                move |(self_ty, trait_id)| {
+                    if self_ty == ty {
+                        Some(*trait_id)
+                    } else {
+                        None
+                    }
+                },
+            )
     }
 }
 
@@ -79,7 +88,10 @@ pub struct InEnvironment<T> {
 
 impl<T> InEnvironment<T> {
     pub fn new(environment: chalk_ir::Environment<Interner>, value: T) -> InEnvironment<T> {
-        InEnvironment { environment, goal: value }
+        InEnvironment {
+            environment,
+            goal: value,
+        }
     }
 }
 
@@ -148,7 +160,10 @@ pub(crate) fn trait_solve_query(
 
     // We currently don't deal with universes (I think / hope they're not yet
     // relevant for our use cases?)
-    let u_canonical = chalk_ir::UCanonical { canonical, universes: 1 };
+    let u_canonical = chalk_ir::UCanonical {
+        canonical,
+        universes: 1,
+    };
     let solution = solve(db, krate, &u_canonical);
     solution.map(|solution| solution_from_chalk(db, solution))
 }
@@ -196,8 +211,11 @@ fn solve(
 
     // don't set the TLS for Chalk unless Chalk debugging is active, to make
     // extra sure we only use it for debugging
-    let solution =
-        if is_chalk_debug() { chalk::tls::set_current_program(db, solve) } else { solve() };
+    let solution = if is_chalk_debug() {
+        chalk::tls::set_current_program(db, solve)
+    } else {
+        solve()
+    };
 
     solution
 }
